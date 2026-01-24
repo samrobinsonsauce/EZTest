@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: ezt
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ezt
+    main: ./main.go
+    binary: ezt
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+
+brews:
+  - name: ezt
+    repository:
+      owner: samrobinsonsauce
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/samrobinsonsauce/ezt"
+    description: "TUI for selecting and running Elixir tests"
+    license: "MIT"
+    install: |
+      bin.install "ezt"
+    test: |
+      system "#{bin}/ezt", "--help"
+
+release:
+  github:
+    owner: samrobinsonsauce
+    name: ezt
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"
