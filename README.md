@@ -83,82 +83,9 @@ go build -o ezt .
 go run .
 ```
 
-### Releasing
-
-1. Tag a new version:
-   ```bash
-   git tag v1.0.0
-   git push --tags
-   ```
-
-2. GoReleaser will automatically:
-   - Build binaries for all platforms
-   - Create a GitHub release
-   - Update the Homebrew formula
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## Setting Up Homebrew Tap (For Maintainers)
-
-To enable `brew install samrobinsonsauce/tap/ezt`, you need to set up a Homebrew tap repository:
-
-### 1. Create the Tap Repository
-
-Create a new GitHub repository named `homebrew-tap` at:
-`https://github.com/samrobinsonsauce/homebrew-tap`
-
-### 2. Initialize the Repository
-
-```bash
-git clone https://github.com/samrobinsonsauce/homebrew-tap.git
-cd homebrew-tap
-mkdir Formula
-touch Formula/.gitkeep
-git add .
-git commit -m "Initial commit"
-git push
-```
-
-### 3. Create a Personal Access Token
-
-1. Go to GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
-2. Create a new token with:
-   - **Repository access**: Select `homebrew-tap` repository
-   - **Permissions**: 
-     - Contents: Read and write
-     - Metadata: Read-only
-3. Copy the token
-
-### 4. Add the Token as a Secret
-
-In your `ezt` repository:
-1. Go to Settings → Secrets and variables → Actions
-2. Add a new repository secret:
-   - **Name**: `HOMEBREW_TAP_GITHUB_TOKEN`
-   - **Value**: (paste your token)
-
-### 5. Release
-
-When you push a tag (e.g., `git tag v1.0.0 && git push --tags`), the GitHub Action will:
-1. Build binaries for macOS (Intel + Apple Silicon) and Linux
-2. Create a GitHub release with the binaries
-3. Automatically update the Homebrew formula in your tap repository
-
-### 6. Install
-
-Your team can now install with:
-
-```bash
-brew tap samrobinsonsauce/tap
-brew install ezt
-```
-
-Or in one command:
-
-```bash
-brew install samrobinsonsauce/tap/ezt
-```
