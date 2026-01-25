@@ -8,9 +8,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: ezt
+  - id: eztest
     main: ./main.go
-    binary: ezt
+    binary: eztest
     env:
       - CGO_ENABLED=0
     goos:
@@ -47,7 +47,7 @@ changelog:
       - "Merge branch"
 
 brews:
-  - name: ezt
+  - name: eztest
     repository:
       owner: samrobinsonsauce
       name: homebrew-tap
@@ -57,14 +57,14 @@ brews:
     description: "TUI for selecting and running Elixir tests"
     license: "MIT"
     install: |
-      bin.install "ezt"
+      bin.install "eztest"
     test: |
-      system "#{bin}/ezt", "--help"
+      system "#{bin}/eztest", "--help"
 
 release:
   github:
     owner: samrobinsonsauce
-    name: ezt
+    name: eztest
   draft: false
   prerelease: auto
   name_template: "v{{ .Version }}"
