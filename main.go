@@ -6,9 +6,9 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/samrobinsonsauce/ezt/internal/config"
-	"github.com/samrobinsonsauce/ezt/internal/testfile"
-	"github.com/samrobinsonsauce/ezt/internal/tui"
+	"github.com/samrobinsonsauce/eztest/internal/config"
+	"github.com/samrobinsonsauce/eztest/internal/testfile"
+	"github.com/samrobinsonsauce/eztest/internal/tui"
 )
 
 var (

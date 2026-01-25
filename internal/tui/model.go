@@ -10,8 +10,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/samrobinsonsauce/ezt/internal/config"
-	"github.com/samrobinsonsauce/ezt/internal/testfile"
+	"github.com/samrobinsonsauce/eztest/internal/config"
+	"github.com/samrobinsonsauce/eztest/internal/testfile"
 )
 
 type Model struct {
