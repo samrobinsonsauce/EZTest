@@ -54,9 +54,6 @@ func NewModel(testFiles []testfile.TestFile, projectDir string, selections []str
 	ti.TextStyle = searchInputStyle
 	ti.Prompt = "🔍 "
 
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7C3AED"))
 
 	return Model{
 		allItems:      items,
@@ -64,7 +61,6 @@ func NewModel(testFiles []testfile.TestFile, projectDir string, selections []str
 		projectDir:    projectDir,
 		cursor:        0,
 		searchInput:   ti,
-		spinner:       s,
 		keyMap:        DefaultKeyMap(),
 		width:         80,
 		height:        24,
@@ -286,8 +282,8 @@ func (m Model) IsQuitting() bool {
 func (m Model) getAnimatedTitle() string {
 	cursors := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	cursor := cursors[m.frame%len(cursors)]
-	
-	titleText := "ezt - Elixir Test Selector"
+
+	titleText := "EZTest- Elixir Test Selector"
 	
 	return lipgloss.NewStyle().
 		Bold(true).
@@ -355,7 +351,8 @@ func (m Model) View() string {
 			}
 		}
 
-		b.WriteString(listStyle.Width(listWidth).Render(listContent.String()))
+		// Keep the list container height stable even when only a few items are visible.
+		b.WriteString(listStyle.Width(listWidth).Height(listHeight).Render(listContent.String()))
 	}
 
 	selectedCount := 0
