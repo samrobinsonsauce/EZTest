@@ -1,6 +1,6 @@
-# ezt - Elixir Test Selector
+# EZTest - Elixir Test Selector
 
-ezt is a fast, minimal TUI for discovering, selecting, and running Elixir test files from inside a Phoenix or Elixir project. It scans your project for `*_test.exs` files, lets you filter and select any number of them, then runs `mix test` only for the tests you chose. Your selections are saved per project so you can pick up where you left off.
+ EZTest is a fast, minimal TUI for discovering, selecting, and running Elixir test files from inside a Phoenix or Elixir project. It scans your project for `*_test.exs` files, lets you filter and select any number of them, then runs `mix test` only for the tests you chose. Your selections are saved per project so you can pick up where you left off.
 
 Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
@@ -25,7 +25,7 @@ Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew install samrobinsonsauce/tap/ezt
+brew install samrobinsonsauce/tap/eztest
 ```
 
 ### From source
@@ -44,8 +44,8 @@ https://github.com/samrobinsonsauce/eztest/releases
 From inside an Elixir/Phoenix project:
 
 ```bash
-ezt        # Open the TUI to select and run tests
-ezt -r     # Run previously saved tests directly (skip the TUI)
+eztest        # Open the TUI to select and run tests
+eztest -r     # Run previously saved tests directly (skip the TUI)
 ```
 
 If you run `ezt` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
@@ -78,10 +78,10 @@ will match paths that contain both terms in any order.
 Selections are stored per project under your user config directory. On macOS and Linux this is typically:
 
 ```
-~/.config/ezt/
+~/.config/eztest/
 ```
 
-When you run `ezt` again in the same project, previously selected tests are pre-selected.
+When you run `eztest` again in the same project, previously selected tests are pre-selected.
 
 ## Requirements
 
