@@ -2,7 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/samrobinsonsauce/ezt/internal/testfile"
+	"github.com/samrobinsonsauce/eztest/internal/testfile"
 )
 
 type Item struct {
