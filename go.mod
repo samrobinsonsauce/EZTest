@@ -1,4 +1,4 @@
-module github.com/samrobinsonsauce/ezt
+module github.com/samrobinsonsauce/eztest
 
 go 1.21
 
