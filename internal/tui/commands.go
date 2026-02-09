@@ -8,32 +8,6 @@ import (
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	bannerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#7C3AED")).
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#7C3AED")).
-			Padding(0, 2).
-			MarginBottom(1)
-
-	logoStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#7C3AED"))
-
-	fileCountStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#10B981"))
-
-	fileListStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9CA3AF")).
-			MarginLeft(2)
-
-	dividerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#374151"))
 )
 
 func runTestsCmd(files []string) tea.Cmd {

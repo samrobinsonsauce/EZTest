@@ -17,6 +17,7 @@ Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 - Fuzzy search: quickly filter test files as you type
 - Multi-select: select any number of tests to run
 - Persistent selections: remembers selections per project
+- Configurable themes and keybinds: customize visuals and controls via config file
 - Vim-style navigation: use home row to navigate
 - Clean UI: simple, fzf-inspired interface
 
@@ -50,7 +51,7 @@ eztest -r     # Run previously saved tests directly (skip the TUI)
 
 If you run `ezt` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
 
-## Key bindings
+## Key bindings (defaults)
 
 | Key | Action |
 |-----|--------|
@@ -62,6 +63,40 @@ If you run `ezt` outside an Elixir project, it will fail with an error because i
 | `Enter` | Save selections and run `mix test` for selected files |
 | `Ctrl+s` | Save selections and quit (without running) |
 | `Esc` | Quit without saving |
+
+## Configuration
+
+You can customize the app with:
+
+```
+~/.config/eztest/config.json
+```
+
+Example:
+
+```json
+{
+  "theme": "gruvbox",
+  "keybinds": {
+    "up": ["up", "k"],
+    "down": ["down", "j"],
+    "select": ["tab"],
+    "run": ["enter"],
+    "quit": ["esc", "ctrl+c"]
+  },
+  "ui": {
+    "animations": true,
+    "compact_help": false
+  }
+}
+```
+
+Supported themes:
+- `default`
+- `gruvbox`
+- `catppuccin` (also accepts `catppucin`)
+
+When keybinds are overridden, the legend at the bottom of the TUI updates automatically to show the active keys.
 
 ## Search
 

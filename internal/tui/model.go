@@ -6,10 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/samrobinsonsauce/eztest/internal/config"
 	"github.com/samrobinsonsauce/eztest/internal/testfile"
 )
@@ -20,8 +19,9 @@ type Model struct {
 	projectDir    string
 	cursor        int
 	searchInput   textinput.Model
-	spinner       spinner.Model
 	keyMap        KeyMap
+	animations    bool
+	compactHelp   bool
 	width         int
 	height        int
 	frame         int
@@ -31,7 +31,7 @@ type Model struct {
 
 type tickMsg time.Time
 
-func NewModel(testFiles []testfile.TestFile, projectDir string, selections []string) Model {
+func NewModel(testFiles []testfile.TestFile, projectDir string, selections []string, keyMap KeyMap, ui config.UISettings) Model {
 	selectedSet := make(map[string]bool)
 	for _, s := range selections {
 		selectedSet[s] = true
@@ -54,6 +54,9 @@ func NewModel(testFiles []testfile.TestFile, projectDir string, selections []str
 	ti.TextStyle = searchInputStyle
 	ti.Prompt = "🔍 "
 
+	if len(keyMap.Up.Keys()) == 0 {
+		keyMap = DefaultKeyMap()
+	}
 
 	return Model{
 		allItems:      items,
@@ -61,7 +64,9 @@ func NewModel(testFiles []testfile.TestFile, projectDir string, selections []str
 		projectDir:    projectDir,
 		cursor:        0,
 		searchInput:   ti,
-		keyMap:        DefaultKeyMap(),
+		keyMap:        keyMap,
+		animations:    ui.Animations,
+		compactHelp:   ui.CompactHelp,
 		width:         80,
 		height:        24,
 		frame:         0,
@@ -75,7 +80,11 @@ func tick() tea.Cmd {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, tick(), m.spinner.Tick)
+	cmds := []tea.Cmd{textinput.Blink}
+	if m.animations {
+		cmds = append(cmds, tick())
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -84,38 +93,37 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tickMsg:
-		m.frame++
-		return m, tick()
-
-	case spinner.TickMsg:
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
+		if m.animations {
+			m.frame++
+			return m, tick()
+		}
+		return m, nil
 
 	case tea.KeyMsg:
 		switch {
-		case msg.String() == "ctrl+c" || msg.String() == "esc":
+		case key.Matches(msg, m.keyMap.Quit):
 			m.quitting = true
 			return m, tea.Quit
 
-		case msg.String() == "ctrl+s":
+		case key.Matches(msg, m.keyMap.SaveQuit):
 			selections := m.getSelectedFiles()
 			_ = config.SaveProjectSelections(m.projectDir, selections)
 			m.quitting = true
 			return m, tea.Quit
 
-		case msg.String() == "up" || msg.String() == "ctrl+k":
+		case key.Matches(msg, m.keyMap.Up):
 			if m.cursor > 0 {
 				m.cursor--
 			}
 			return m, nil
 
-		case msg.String() == "down" || msg.String() == "ctrl+j":
+		case key.Matches(msg, m.keyMap.Down):
 			if m.cursor < len(m.filteredItems)-1 {
 				m.cursor++
 			}
 			return m, nil
 
-		case msg.String() == "tab":
+		case key.Matches(msg, m.keyMap.Select):
 			if len(m.filteredItems) > 0 && m.cursor < len(m.filteredItems) {
 				filteredItem := &m.filteredItems[m.cursor]
 				filteredItem.Selected = !filteredItem.Selected
@@ -129,7 +137,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case msg.String() == "ctrl+a":
+		case key.Matches(msg, m.keyMap.SelectAll):
 			for i := range m.filteredItems {
 				m.filteredItems[i].Selected = true
 				for j := range m.allItems {
@@ -141,7 +149,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case msg.String() == "ctrl+d":
+		case key.Matches(msg, m.keyMap.DeselectAll):
 			for i := range m.allItems {
 				m.allItems[i].Selected = false
 			}
@@ -150,7 +158,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case msg.String() == "enter":
+		case key.Matches(msg, m.keyMap.Run):
 			m.filesToRun = m.getSelectedFiles()
 			_ = config.SaveProjectSelections(m.projectDir, m.filesToRun)
 			m.quitting = true
@@ -280,15 +288,14 @@ func (m Model) IsQuitting() bool {
 }
 
 func (m Model) getAnimatedTitle() string {
+	titleText := "EZTest - Elixir Test Selector"
+	if !m.animations {
+		return titleStyle.Render(titleText)
+	}
+
 	cursors := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	cursor := cursors[m.frame%len(cursors)]
-
-	titleText := "EZTest- Elixir Test Selector"
-	
-	return lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#7C3AED")).
-		Render(cursor + " " + titleText)
+	return titleStyle.Render(cursor + " " + titleText)
 }
 
 func (m Model) View() string {
@@ -319,7 +326,10 @@ func (m Model) View() string {
 	}
 
 	if len(m.filteredItems) == 0 {
-		dots := strings.Repeat(".", (m.frame/3)%4)
+		dots := ""
+		if m.animations {
+			dots = strings.Repeat(".", (m.frame/3)%4)
+		}
 		noResultsText := fmt.Sprintf("No matching test files%s", dots)
 		noResults := noResultsStyle.Render(noResultsText)
 		b.WriteString(listStyle.Width(listWidth).Height(listHeight).Render(noResults))
@@ -345,7 +355,7 @@ func (m Model) View() string {
 
 		var listContent strings.Builder
 		for i := start; i < end; i++ {
-			listContent.WriteString(RenderItem(m.filteredItems[i], i, m.cursor, listWidth-2, m.frame))
+			listContent.WriteString(RenderItem(m.filteredItems[i], i, m.cursor, listWidth-2, m.frame, m.animations))
 			if i < end-1 {
 				listContent.WriteString("\n")
 			}
@@ -364,19 +374,22 @@ func (m Model) View() string {
 
 	var statusIcon string
 	if selectedCount > 0 {
-		icons := []string{"◆", "◇", "◆", "◇"}
-		statusIcon = icons[m.frame%len(icons)] + " "
+		statusIcon = "◆ "
+		if m.animations {
+			icons := []string{"◆", "◇", "◆", "◇"}
+			statusIcon = icons[m.frame%len(icons)] + " "
+		}
 	}
-	
+
 	status := fmt.Sprintf("%s%d selected • %d/%d shown", statusIcon, selectedCount, len(m.filteredItems), len(m.allItems))
 	b.WriteString("\n")
 	b.WriteString(statusStyle.Render(status))
 
 	b.WriteString("\n")
-	help := m.keyMap.ShortHelp()
+	help := m.keyMap.ShortHelp(m.compactHelp)
 	b.WriteString(helpStyle.Render(help))
 
-	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
+	return appStyle.Render(b.String())
 }
 
 func max(a, b int) int {
