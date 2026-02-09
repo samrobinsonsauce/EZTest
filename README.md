@@ -11,6 +11,7 @@ Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 - Lets you filter the list with fuzzy search and select multiple files
 - Runs `MIX_ENV=test mix test` with only the selected test file paths
 - Persists selections per project so the next run starts pre-selected
+- Persists last failed files per project for fast reruns
 
 ## Features
 
@@ -47,6 +48,7 @@ From inside an Elixir/Phoenix project:
 ```bash
 eztest        # Open the TUI to select and run tests
 eztest -r     # Run previously saved tests directly (skip the TUI)
+eztest -f     # Run previously failed tests directly (skip the TUI)
 ```
 
 If you run `eztest` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
@@ -108,6 +110,8 @@ user controller
 
 will match paths that contain both terms in any order.
 
+Use `@failed` in the search box to only show the files that failed in the most recent run.
+
 ## Persistent selections
 
 Selections are stored per project under your user config directory. On macOS and Linux this is typically:
@@ -117,6 +121,7 @@ Selections are stored per project under your user config directory. On macOS and
 ```
 
 When you run `eztest` again in the same project, previously selected tests are pre-selected.
+The TUI also marks recently failing files with a `✗` indicator.
 
 ## Requirements
 

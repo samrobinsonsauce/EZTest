@@ -17,6 +17,7 @@ const (
 
 type State struct {
 	ProjectSelections map[string][]string `json:"project_selections"`
+	ProjectFailures   map[string][]string `json:"project_failures,omitempty"`
 }
 
 type AppSettings struct {
@@ -99,18 +100,27 @@ func DefaultAppSettings() AppSettings {
 func LoadState() (*State, error) {
 	configPath, err := getStatePath()
 	if err != nil {
-		return &State{ProjectSelections: make(map[string][]string)}, nil
+		return &State{
+			ProjectSelections: make(map[string][]string),
+			ProjectFailures:   make(map[string][]string),
+		}, nil
 	}
 
 	data, err := os.ReadFile(configPath)
 	if os.IsNotExist(err) {
 		legacyPath, legacyErr := getLegacyStatePath()
 		if legacyErr != nil {
-			return &State{ProjectSelections: make(map[string][]string)}, nil
+			return &State{
+				ProjectSelections: make(map[string][]string),
+				ProjectFailures:   make(map[string][]string),
+			}, nil
 		}
 		data, err = os.ReadFile(legacyPath)
 		if os.IsNotExist(err) {
-			return &State{ProjectSelections: make(map[string][]string)}, nil
+			return &State{
+				ProjectSelections: make(map[string][]string),
+				ProjectFailures:   make(map[string][]string),
+			}, nil
 		}
 	}
 	if err != nil {
@@ -119,11 +129,17 @@ func LoadState() (*State, error) {
 
 	var state State
 	if err := json.Unmarshal(data, &state); err != nil {
-		return &State{ProjectSelections: make(map[string][]string)}, nil
+		return &State{
+			ProjectSelections: make(map[string][]string),
+			ProjectFailures:   make(map[string][]string),
+		}, nil
 	}
 
 	if state.ProjectSelections == nil {
 		state.ProjectSelections = make(map[string][]string)
+	}
+	if state.ProjectFailures == nil {
+		state.ProjectFailures = make(map[string][]string)
 	}
 
 	return &state, nil
@@ -290,10 +306,41 @@ func GetProjectSelections(projectDir string) ([]string, error) {
 func SaveProjectSelections(projectDir string, selections []string) error {
 	state, err := LoadState()
 	if err != nil {
-		state = &State{ProjectSelections: make(map[string][]string)}
+		state = &State{
+			ProjectSelections: make(map[string][]string),
+			ProjectFailures:   make(map[string][]string),
+		}
 	}
 
 	state.ProjectSelections[projectDir] = selections
+
+	return SaveState(state)
+}
+
+func GetProjectFailures(projectDir string) ([]string, error) {
+	state, err := LoadState()
+	if err != nil {
+		return nil, err
+	}
+
+	failures, ok := state.ProjectFailures[projectDir]
+	if !ok {
+		return []string{}, nil
+	}
+
+	return failures, nil
+}
+
+func SaveProjectFailures(projectDir string, failures []string) error {
+	state, err := LoadState()
+	if err != nil {
+		state = &State{
+			ProjectSelections: make(map[string][]string),
+			ProjectFailures:   make(map[string][]string),
+		}
+	}
+
+	state.ProjectFailures[projectDir] = failures
 
 	return SaveState(state)
 }

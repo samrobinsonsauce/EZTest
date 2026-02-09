@@ -173,4 +173,38 @@ func TestLoadStateFallsBackToLegacyPath(t *testing.T) {
 	if got, want := selections, []string{"test/foo_test.exs"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected selections from legacy state: got %v want %v", got, want)
 	}
+
+	failures, err := GetProjectFailures(projectDir)
+	if err != nil {
+		t.Fatalf("GetProjectFailures returned error: %v", err)
+	}
+	if len(failures) != 0 {
+		t.Fatalf("expected no failures in legacy state without project_failures field, got %v", failures)
+	}
+}
+
+func TestSaveAndGetProjectFailures(t *testing.T) {
+	_ = prepareConfigPath(t)
+
+	projectDir := "/tmp/another_project"
+	input := []string{"test/foo_test.exs", "test/bar_test.exs"}
+	if err := SaveProjectFailures(projectDir, input); err != nil {
+		t.Fatalf("SaveProjectFailures returned error: %v", err)
+	}
+
+	got, err := GetProjectFailures(projectDir)
+	if err != nil {
+		t.Fatalf("GetProjectFailures returned error: %v", err)
+	}
+	if !reflect.DeepEqual(got, input) {
+		t.Fatalf("unexpected failures: got %v want %v", got, input)
+	}
+
+	empty, err := GetProjectFailures("/tmp/unknown")
+	if err != nil {
+		t.Fatalf("GetProjectFailures for unknown project returned error: %v", err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected empty failures for unknown project, got %v", empty)
+	}
 }

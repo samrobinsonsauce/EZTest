@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/samrobinsonsauce/eztest/internal/config"
@@ -12,15 +14,17 @@ import (
 )
 
 var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
+	version        = "dev"
+	commit         = "none"
+	date           = "unknown"
+	executeMixTest = tui.ExecuteMixTest
 )
 
 func main() {
 	showVersion := flag.Bool("version", false, "Show version information")
 	showHelp := flag.Bool("help", false, "Show help")
 	runDirect := flag.Bool("r", false, "Run saved tests directly without opening TUI")
+	runFailed := flag.Bool("f", false, "Run last failed tests directly without opening TUI")
 	flag.Parse()
 
 	if *showHelp {
@@ -46,6 +50,11 @@ func main() {
 	}
 	tui.ApplyTheme(appSettings.Theme)
 
+	if *runDirect && *runFailed {
+		fmt.Fprintf(os.Stderr, "Use either -r or -f, not both.\n")
+		os.Exit(1)
+	}
+
 	if *runDirect {
 		selections, err := config.GetProjectSelections(cwd)
 		if err != nil {
@@ -56,11 +65,20 @@ func main() {
 			fmt.Fprintf(os.Stderr, "No tests saved. Run 'ezt' first to select tests.\n")
 			os.Exit(1)
 		}
-		if err := tui.ExecuteMixTest(selections); err != nil {
-			fmt.Fprintf(os.Stderr, "Error running mix test: %v\n", err)
+		os.Exit(runAndPersistFailures(cwd, selections))
+	}
+
+	if *runFailed {
+		failures, err := config.GetProjectFailures(cwd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading failed tests: %v\n", err)
 			os.Exit(1)
 		}
-		os.Exit(0)
+		if len(failures) == 0 {
+			fmt.Fprintf(os.Stderr, "No failed tests saved. Run tests first to capture failures.\n")
+			os.Exit(1)
+		}
+		os.Exit(runAndPersistFailures(cwd, failures))
 	}
 
 	testFiles, err := testfile.FindTestFiles(cwd)
@@ -78,6 +96,7 @@ func main() {
 		testFiles,
 		cwd,
 		selections,
+		failuresForProject(cwd),
 		tui.NewKeyMap(appSettings.Keybinds),
 		appSettings.UI,
 	)
@@ -104,10 +123,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := tui.ExecuteMixTest(files); err != nil {
-		fmt.Fprintf(os.Stderr, "Error running mix test: %v\n", err)
-		os.Exit(1)
-	}
+	os.Exit(runAndPersistFailures(cwd, files))
 }
 
 func printHelp() {
@@ -125,6 +141,7 @@ USAGE:
 
 OPTIONS:
     -r           Run saved tests directly (skip TUI)
+    -f           Run last failed tests directly (skip TUI)
     --help       Show this help message
     --version    Show version information
 
@@ -142,6 +159,7 @@ KEYBINDINGS:
 EXAMPLES:
     ezt          Open TUI to select and run tests
     ezt -r       Run previously saved tests directly
+    ezt -f       Run previously failed tests directly
 
 USAGE:
     Navigate to your Elixir/Phoenix project and run 'ezt'.
@@ -150,4 +168,34 @@ USAGE:
     Selections are saved per-project in ~/.config/eztest/state.json
 `, configPath)
 	fmt.Print(help)
+}
+
+func failuresForProject(projectDir string) []string {
+	failures, err := config.GetProjectFailures(projectDir)
+	if err != nil {
+		return []string{}
+	}
+	return failures
+}
+
+func runAndPersistFailures(projectDir string, files []string) int {
+	outcome, err := executeMixTest(files)
+
+	var exitErr *exec.ExitError
+	if err == nil || errors.As(err, &exitErr) {
+		if saveErr := config.SaveProjectFailures(projectDir, outcome.FailedFiles); saveErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to persist failed tests: %v\n", saveErr)
+		}
+	}
+
+	if err == nil {
+		return 0
+	}
+
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode()
+	}
+
+	fmt.Fprintf(os.Stderr, "Error running mix test: %v\n", err)
+	return 1
 }

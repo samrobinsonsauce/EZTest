@@ -7,6 +7,7 @@ import (
 type Item struct {
 	TestFile testfile.TestFile
 	Selected bool
+	Failed   bool
 }
 
 func (i Item) FilterValue() string {
@@ -42,12 +43,17 @@ func RenderItem(item Item, index int, cursor int, width int, frame int, animate 
 
 	path := item.TestFile.Path
 
-	maxPathWidth := width - 8
+	failureMarker := failedMarkerStyle.Render(" ")
+	if item.Failed {
+		failureMarker = failedMarkerStyle.Render("✗")
+	}
+
+	maxPathWidth := width - 10
 	if maxPathWidth > 0 && len(path) > maxPathWidth {
 		path = "..." + path[len(path)-maxPathWidth+3:]
 	}
 
-	line := cursorIndicator + " " + checkbox + " " + path
+	line := cursorIndicator + " " + checkbox + " " + failureMarker + " " + path
 
 	if isCursor {
 		return selectedItemStyle.Width(width).Render(line)

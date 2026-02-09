@@ -31,10 +31,14 @@ type Model struct {
 
 type tickMsg time.Time
 
-func NewModel(testFiles []testfile.TestFile, projectDir string, selections []string, keyMap KeyMap, ui config.UISettings) Model {
+func NewModel(testFiles []testfile.TestFile, projectDir string, selections []string, failures []string, keyMap KeyMap, ui config.UISettings) Model {
 	selectedSet := make(map[string]bool)
 	for _, s := range selections {
 		selectedSet[s] = true
+	}
+	failedSet := make(map[string]bool)
+	for _, f := range failures {
+		failedSet[f] = true
 	}
 
 	items := make([]Item, len(testFiles))
@@ -42,6 +46,7 @@ func NewModel(testFiles []testfile.TestFile, projectDir string, selections []str
 		items[i] = Item{
 			TestFile: tf,
 			Selected: selectedSet[tf.Path],
+			Failed:   failedSet[tf.Path],
 		}
 	}
 
@@ -185,15 +190,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) updateFilter() {
 	query := strings.TrimSpace(m.searchInput.Value())
+	failedOnly := false
+	if strings.Contains(strings.ToLower(query), "@failed") {
+		failedOnly = true
+		query = strings.ReplaceAll(strings.ToLower(query), "@failed", "")
+	}
 
-	if query == "" {
-		m.filteredItems = make([]Item, len(m.allItems))
-		copy(m.filteredItems, m.allItems)
+	if strings.TrimSpace(query) == "" {
+		m.filteredItems = make([]Item, 0, len(m.allItems))
+		for _, item := range m.allItems {
+			if failedOnly && !item.Failed {
+				continue
+			}
+			m.filteredItems = append(m.filteredItems, item)
+		}
 	} else {
 		tokens := strings.Fields(strings.ToLower(query))
 
 		m.filteredItems = make([]Item, 0)
 		for _, item := range m.allItems {
+			if failedOnly && !item.Failed {
+				continue
+			}
+
 			pathLower := strings.ToLower(item.TestFile.Path)
 
 			allMatch := true
@@ -366,9 +385,13 @@ func (m Model) View() string {
 	}
 
 	selectedCount := 0
+	failedCount := 0
 	for _, item := range m.allItems {
 		if item.Selected {
 			selectedCount++
+		}
+		if item.Failed {
+			failedCount++
 		}
 	}
 
@@ -381,7 +404,7 @@ func (m Model) View() string {
 		}
 	}
 
-	status := fmt.Sprintf("%s%d selected • %d/%d shown", statusIcon, selectedCount, len(m.filteredItems), len(m.allItems))
+	status := fmt.Sprintf("%s%d selected • %d failing • %d/%d shown", statusIcon, selectedCount, failedCount, len(m.filteredItems), len(m.allItems))
 	b.WriteString("\n")
 	b.WriteString(statusStyle.Render(status))
 

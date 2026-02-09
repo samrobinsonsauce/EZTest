@@ -97,6 +97,8 @@ var (
 
 	checkboxUncheckedStyle lipgloss.Style
 
+	failedMarkerStyle lipgloss.Style
+
 	cursorStyle lipgloss.Style
 
 	noCursorStyle lipgloss.Style
@@ -202,6 +204,10 @@ func applyPalette(p palette) {
 
 	checkboxUncheckedStyle = lipgloss.NewStyle().
 		Foreground(mutedColor)
+
+	failedMarkerStyle = lipgloss.NewStyle().
+		Foreground(errorColor).
+		Bold(true)
 
 	cursorStyle = lipgloss.NewStyle().
 		Foreground(primaryColor).
