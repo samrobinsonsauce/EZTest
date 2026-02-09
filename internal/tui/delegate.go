@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"github.com/charmbracelet/lipgloss"
 	"github.com/samrobinsonsauce/eztest/internal/testfile"
 )
 
@@ -14,31 +13,31 @@ func (i Item) FilterValue() string {
 	return i.TestFile.Path
 }
 
-func RenderItem(item Item, index int, cursor int, width int, frame int) string {
+func RenderItem(item Item, index int, cursor int, width int, frame int, animate bool) string {
 	isCursor := index == cursor
 
 	var checkbox string
 	if item.Selected {
-		checkmarks := []string{"[✓]", "[✓]", "[✓]", "[★]"}
-		checkbox = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#10B981")).
-			Bold(true).
-			Render(checkmarks[frame%len(checkmarks)])
+		checkmark := "[✓]"
+		if animate {
+			checkmarks := []string{"[✓]", "[✓]", "[✓]", "[★]"}
+			checkmark = checkmarks[frame%len(checkmarks)]
+		}
+		checkbox = checkboxCheckedStyle.Render(checkmark)
 	} else {
-		checkbox = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280")).
-			Render("[ ]")
+		checkbox = checkboxUncheckedStyle.Render("[ ]")
 	}
 
 	var cursorIndicator string
 	if isCursor {
-		cursors := []string{"▸", "▹", "▸", "▹"}
-		cursorIndicator = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7C3AED")).
-			Bold(true).
-			Render(cursors[frame%len(cursors)])
+		cursorChar := "▸"
+		if animate {
+			cursors := []string{"▸", "▹", "▸", "▹"}
+			cursorChar = cursors[frame%len(cursors)]
+		}
+		cursorIndicator = cursorStyle.Render(cursorChar)
 	} else {
-		cursorIndicator = " "
+		cursorIndicator = noCursorStyle.Render(" ")
 	}
 
 	path := item.TestFile.Path
@@ -50,12 +49,9 @@ func RenderItem(item Item, index int, cursor int, width int, frame int) string {
 
 	line := cursorIndicator + " " + checkbox + " " + path
 
-	var style lipgloss.Style
 	if isCursor {
-		style = selectedItemStyle.Width(width)
+		return selectedItemStyle.Width(width).Render(line)
 	} else {
-		style = itemStyle.Width(width)
+		return itemStyle.Width(width).Render(line)
 	}
-
-	return style.Render(line)
 }

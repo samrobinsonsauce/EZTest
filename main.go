@@ -39,6 +39,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	appSettings, err := config.LoadAppSettings()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+		appSettings = config.DefaultAppSettings()
+	}
+	tui.ApplyTheme(appSettings.Theme)
+
 	if *runDirect {
 		selections, err := config.GetProjectSelections(cwd)
 		if err != nil {
@@ -67,7 +74,13 @@ func main() {
 		selections = []string{}
 	}
 
-	model := tui.NewModel(testFiles, cwd, selections)
+	model := tui.NewModel(
+		testFiles,
+		cwd,
+		selections,
+		tui.NewKeyMap(appSettings.Keybinds),
+		appSettings.UI,
+	)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	finalModel, err := p.Run()
@@ -98,7 +111,12 @@ func main() {
 }
 
 func printHelp() {
-	help := `ezt - Elixir Test Selector
+	configPath, err := config.GetAppConfigPath()
+	if err != nil {
+		configPath = "~/.config/eztest/config.json"
+	}
+
+	help := fmt.Sprintf(`ezt - Elixir Test Selector
 
 A TUI for selecting and running Elixir tests.
 
@@ -111,6 +129,7 @@ OPTIONS:
     --version    Show version information
 
 KEYBINDINGS:
+    (defaults shown below; configurable in %s)
     ↑ / Ctrl+k   Move cursor up
     ↓ / Ctrl+j   Move cursor down
     Tab          Toggle selection on current item
@@ -128,7 +147,7 @@ USAGE:
     Navigate to your Elixir/Phoenix project and run 'ezt'.
     Type to filter tests, use Tab to select, Enter to run.
 
-    Selections are saved per-project in ~/.config/ezt/state.json
-`
+    Selections are saved per-project in ~/.config/eztest/state.json
+`, configPath)
 	fmt.Print(help)
 }
