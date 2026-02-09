@@ -49,7 +49,7 @@ eztest        # Open the TUI to select and run tests
 eztest -r     # Run previously saved tests directly (skip the TUI)
 ```
 
-If you run `ezt` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
+If you run `eztest` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
 
 ## Key bindings (defaults)
 
