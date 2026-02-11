@@ -24,6 +24,7 @@ type AppSettings struct {
 	Theme    string              `json:"theme"`
 	Keybinds map[string][]string `json:"keybinds"`
 	UI       UISettings          `json:"ui"`
+	Run      RunSettings         `json:"run"`
 }
 
 type UISettings struct {
@@ -31,15 +32,24 @@ type UISettings struct {
 	CompactHelp bool `json:"compact_help"`
 }
 
+type RunSettings struct {
+	FailFast bool `json:"fail_fast"`
+}
+
 type rawAppSettings struct {
 	Theme    string              `json:"theme"`
 	Keybinds map[string][]string `json:"keybinds"`
 	UI       rawUISettings       `json:"ui"`
+	Run      rawRunSettings      `json:"run"`
 }
 
 type rawUISettings struct {
 	Animations  *bool `json:"animations"`
 	CompactHelp *bool `json:"compact_help"`
+}
+
+type rawRunSettings struct {
+	FailFast *bool `json:"fail_fast"`
 }
 
 func getConfigDir() (string, error) {
@@ -93,6 +103,9 @@ func DefaultAppSettings() AppSettings {
 		UI: UISettings{
 			Animations:  true,
 			CompactHelp: false,
+		},
+		Run: RunSettings{
+			FailFast: false,
 		},
 	}
 }
@@ -204,6 +217,9 @@ func LoadAppSettings() (AppSettings, error) {
 	}
 	if raw.UI.CompactHelp != nil {
 		settings.UI.CompactHelp = *raw.UI.CompactHelp
+	}
+	if raw.Run.FailFast != nil {
+		settings.Run.FailFast = *raw.Run.FailFast
 	}
 
 	return settings, nil

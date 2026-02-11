@@ -42,6 +42,9 @@ func TestLoadAppSettingsDefaultsWhenMissing(t *testing.T) {
 	if settings.UI.CompactHelp {
 		t.Fatalf("expected compact help disabled by default")
 	}
+	if settings.Run.FailFast {
+		t.Fatalf("expected fail_fast disabled by default")
+	}
 }
 
 func TestGetAppConfigPathUsesEztestDir(t *testing.T) {
@@ -68,6 +71,9 @@ func TestLoadAppSettingsReadsAndNormalizes(t *testing.T) {
   "ui": {
     "animations": false,
     "compact_help": true
+  },
+  "run": {
+    "fail_fast": true
   }
 }`
 	if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
@@ -98,6 +104,9 @@ func TestLoadAppSettingsReadsAndNormalizes(t *testing.T) {
 	if !settings.UI.CompactHelp {
 		t.Fatalf("expected compact help to be enabled")
 	}
+	if !settings.Run.FailFast {
+		t.Fatalf("expected fail_fast to be enabled")
+	}
 }
 
 func TestLoadAppSettingsInvalidJSONFallsBack(t *testing.T) {
@@ -118,6 +127,9 @@ func TestLoadAppSettingsInvalidJSONFallsBack(t *testing.T) {
 	}
 	if !settings.UI.Animations || settings.UI.CompactHelp {
 		t.Fatalf("expected default UI settings, got %+v", settings.UI)
+	}
+	if settings.Run.FailFast {
+		t.Fatalf("expected default fail_fast=false, got true")
 	}
 }
 
@@ -146,6 +158,9 @@ func TestLoadAppSettingsFallsBackToLegacyPath(t *testing.T) {
 	}
 	if settings.UI.Animations {
 		t.Fatalf("expected animations to be loaded from legacy config")
+	}
+	if settings.Run.FailFast {
+		t.Fatalf("expected fail_fast default false when omitted")
 	}
 }
 

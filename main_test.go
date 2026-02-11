@@ -87,3 +87,120 @@ func TestFailuresForProjectReadsSavedFailures(t *testing.T) {
 		t.Fatalf("failuresForProject() = %v, want %v", got, want)
 	}
 }
+
+func TestRunWithResultsScreenRerunFailed(t *testing.T) {
+	setupConfigEnv(t)
+
+	originalExec := executeMixTest
+	originalExecFailed := executeMixTestFailed
+	originalPrompt := promptRerunAction
+	originalPrint := printResultsScreen
+	originalInteractive := isInteractiveSession
+	t.Cleanup(func() {
+		executeMixTest = originalExec
+		executeMixTestFailed = originalExecFailed
+		promptRerunAction = originalPrompt
+		printResultsScreen = originalPrint
+		isInteractiveSession = originalInteractive
+	})
+
+	selectedRunCount := 0
+	executedWith := make([][]string, 0, 1)
+	executeMixTest = func(files []string) (tui.TestRunOutcome, error) {
+		snapshot := append([]string(nil), files...)
+		executedWith = append(executedWith, snapshot)
+		selectedRunCount++
+		return tui.TestRunOutcome{
+			FailedFiles: []string{"test/failed_test.exs"},
+			Stats:       tui.TestRunStats{Failures: 1},
+		}, nil
+	}
+	failedRunCount := 0
+	executeMixTestFailed = func() (tui.TestRunOutcome, error) {
+		failedRunCount++
+		return tui.TestRunOutcome{
+			FailedFiles: []string{},
+			Stats:       tui.TestRunStats{Failures: 0},
+		}, nil
+	}
+
+	promptCalls := 0
+	promptRerunAction = func(outcome tui.TestRunOutcome) tui.RerunAction {
+		promptCalls++
+		if promptCalls == 1 {
+			return tui.RerunActionFailed
+		}
+		return tui.RerunActionQuit
+	}
+	printResultsScreen = func(outcome tui.TestRunOutcome, exitCode int) {}
+	isInteractiveSession = func() bool { return true }
+
+	exitCode := runWithResultsScreen("/tmp/project-rerun-failed", []string{"test/first_test.exs", "test/second_test.exs"}, false)
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0, got %d", exitCode)
+	}
+
+	if selectedRunCount != 1 {
+		t.Fatalf("expected selected run to execute once, got %d", selectedRunCount)
+	}
+	if failedRunCount != 1 {
+		t.Fatalf("expected failed rerun to execute once, got %d", failedRunCount)
+	}
+	if got, want := executedWith[0], []string{"test/first_test.exs", "test/second_test.exs"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected first execution files: got %v want %v", got, want)
+	}
+}
+
+func TestRunWithResultsScreenRerunAll(t *testing.T) {
+	setupConfigEnv(t)
+
+	originalExec := executeMixTest
+	originalExecFailed := executeMixTestFailed
+	originalPrompt := promptRerunAction
+	originalPrint := printResultsScreen
+	originalInteractive := isInteractiveSession
+	t.Cleanup(func() {
+		executeMixTest = originalExec
+		executeMixTestFailed = originalExecFailed
+		promptRerunAction = originalPrompt
+		printResultsScreen = originalPrint
+		isInteractiveSession = originalInteractive
+	})
+
+	callCount := 0
+	executedWith := make([][]string, 0, 2)
+	executeMixTest = func(files []string) (tui.TestRunOutcome, error) {
+		snapshot := append([]string(nil), files...)
+		executedWith = append(executedWith, snapshot)
+		callCount++
+		return tui.TestRunOutcome{}, nil
+	}
+	executeMixTestFailed = func() (tui.TestRunOutcome, error) {
+		t.Fatalf("did not expect executeMixTestFailed to be called")
+		return tui.TestRunOutcome{}, nil
+	}
+
+	promptCalls := 0
+	promptRerunAction = func(outcome tui.TestRunOutcome) tui.RerunAction {
+		promptCalls++
+		if promptCalls == 1 {
+			return tui.RerunActionAll
+		}
+		return tui.RerunActionQuit
+	}
+	printResultsScreen = func(outcome tui.TestRunOutcome, exitCode int) {}
+	isInteractiveSession = func() bool { return true }
+
+	initial := []string{"test/all_test.exs"}
+	exitCode := runWithResultsScreen("/tmp/project-rerun-all", initial, false)
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0, got %d", exitCode)
+	}
+
+	if callCount != 2 {
+		t.Fatalf("expected 2 executions, got %d", callCount)
+	}
+	if !reflect.DeepEqual(executedWith[0], initial) || !reflect.DeepEqual(executedWith[1], initial) {
+		t.Fatalf("expected rerun-all to rerun same file set, got %v", executedWith)
+	}
+}

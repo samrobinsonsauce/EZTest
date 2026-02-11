@@ -11,13 +11,15 @@ Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 - Lets you filter the list with fuzzy search and select multiple files
 - Runs `MIX_ENV=test mix test` with only the selected test file paths
 - Persists selections per project so the next run starts pre-selected
-- Persists last failed files per project for fast reruns
+- Persists last failed files per project for filtering/highlighting in the TUI
 
 ## Features
 
 - Fuzzy search: quickly filter test files as you type
 - Multi-select: select any number of tests to run
 - Persistent selections: remembers selections per project
+- Post-run results screen: clearer summary and failure details after each run
+- Live progress ticker during runs: updates pass/fail counts as tests execute
 - Configurable themes and keybinds: customize visuals and controls via config file
 - Vim-style navigation: use home row to navigate
 - Clean UI: simple, fzf-inspired interface
@@ -48,7 +50,7 @@ From inside an Elixir/Phoenix project:
 ```bash
 eztest        # Open the TUI to select and run tests
 eztest -r     # Run previously saved tests directly (skip the TUI)
-eztest -f     # Run previously failed tests directly (skip the TUI)
+eztest -f     # Run only previously failing test cases (mix test --failed)
 ```
 
 If you run `eztest` outside an Elixir project, it will fail with an error because it cannot locate `mix.exs`.
@@ -89,6 +91,9 @@ Example:
   "ui": {
     "animations": true,
     "compact_help": false
+  },
+  "run": {
+    "fail_fast": false
   }
 }
 ```
@@ -99,6 +104,8 @@ Supported themes:
 - `catppuccin` (also accepts `catppucin`)
 
 When keybinds are overridden, the legend at the bottom of the TUI updates automatically to show the active keys.
+Set `run.fail_fast` to `true` to stop after the first failing test (`mix test --max-failures 1`).
+When `run.fail_fast` is `false`, EZTest forces a very high `--max-failures` value so project-level ExUnit limits do not stop runs early.
 
 ## Search
 
@@ -111,6 +118,17 @@ user controller
 will match paths that contain both terms in any order.
 
 Use `@failed` in the search box to only show the files that failed in the most recent run.
+
+After a run, EZTest shows a results screen with:
+- total tests
+- describe block count
+- failures
+- execution time
+
+From that screen:
+- `r` reruns the current selection
+- `rf` runs `mix test --failed`
+- `q` exits
 
 ## Persistent selections
 

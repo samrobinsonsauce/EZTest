@@ -414,10 +414,3 @@ func (m Model) View() string {
 
 	return appStyle.Render(b.String())
 }
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
